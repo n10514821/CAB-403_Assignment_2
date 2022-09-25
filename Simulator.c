@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-//generates random licence plate numbers everytime it is run
+//generates 50 random licence plate numbers
 #define LENGTH_LICENCEPLATE 5
 int main (void) 
 {
