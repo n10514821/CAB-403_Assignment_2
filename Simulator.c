@@ -14,31 +14,37 @@ time_t delay_ms(int seconds)
     while(clock() < start + milli_sec);
 }
 
+void generate_plate_number()
+{
+    char alpha[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    char num[] = "0123456789"; 
+    for(int i = 0; i <= LENGTH_LICENCEPLATE; i ++)
+    {
+        char number = num[rand() % (sizeof num - 1)];
+        char alphabet = alpha[rand() % (sizeof alpha - 1)];
+        if(i <= 2)
+        {
+            printf("%c", number);
+    
+        }
+        else
+        {
+            printf("%c",alphabet);
+    
+        }
+    }
+    printf("\n");
+}
+
 
 int main (void) 
 {
     srand((time(NULL)));
-    char alpha[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    char num[] = "0123456789";        
-
-    for(int i = 0; i <= 50; i++)
+    // generate between 1- 100ms
+    for(int j = 0; j <= rand() % delay_ms(0.1); j++)
     {
-        rand() % delay_ms(0.1); // generate between 1- 100ms
-        for(int i = 0; i <= LENGTH_LICENCEPLATE; i ++)
-        {
-            char number = num[rand() % (sizeof num - 1)];
-            char alphabet = alpha[rand() % (sizeof alpha - 1)];
-            if(i <= 2)
-            {
-                printf("%c", number);
-            }
-            else
-            {
-                printf("%c",alphabet);
-            }
-        }
-        printf("\n");
-
+        generate_plate_number();
     }
+
 
 }
