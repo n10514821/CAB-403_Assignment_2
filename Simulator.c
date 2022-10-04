@@ -15,8 +15,6 @@
 
 // deifnes
 #define PARKING_SIZE 2920
-#define LENGTH_LICENCEPLATE 5
-
 
 // create the shared parking (not sure what should go in here)
 typedef struct shared_carpark
@@ -70,7 +68,16 @@ bool create_shared_object(shared_memory_t *shm, const char *share_name)
 
     return true;
 }
+
+
+
+
 //generates random licence plate numbers everytime it is run
+#define LENGTH_LICENCEPLATE 5
+
+// globals
+    // create a file pointer for communucation between file a program
+    FILE *fileptr;
 
 time_t delay_ms(int seconds)
 {
@@ -91,26 +98,66 @@ void generate_plate_number()
         if(i <= 2)
         {
             printf("%c", number);
-    
         }
         else
         {
-            printf("%c",alphabet);
-    
-        }
+            printf("%c", alphabet);
+        }       
     }
     printf("\n");
+   
+}
+
+void read_file()
+{
+
+    char plate_num[7];
+    //open file 
+    fileptr = fopen("plates.txt","r +");
+
+    // if file does not exist
+    if(fileptr != NULL)
+    {
+        while (!feof(fileptr))
+        {
+            fscanf(fileptr,"%s",&plate_num); 
+            printf("txt %s\n",plate_num);                 
+        }  
+    }
+    else
+    {
+        printf("Error in opening file");
+        exit(1);
+    }
+}
+
+void generate_mix_plates()
+{
+    for (int i = 0; i <= rand()%delay_ms(0.1); i++)
+    {
+        if(i <= rand()%1)
+        {
+            read_file();             
+        }
+        else
+        {
+            generate_plate_number(); 
+        }
+
+    
+    }
+    
 }
 
 
 int main (void) 
 {
-    srand((time(NULL)));
-    // generate between 1- 100ms
-    for(int j = 0; j <= rand() % delay_ms(0.1); j++)
-    {
-        generate_plate_number();
-    }
+    time_t t;
+    srand((unsigned)time(&t));
 
+    generate_mix_plates();
+
+    fclose(fileptr);
+    return 0;
 
 }
