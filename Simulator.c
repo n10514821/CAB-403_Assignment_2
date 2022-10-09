@@ -26,40 +26,87 @@ FILE *fileptr;
 //create a mutex lock
 pthread_mutex_t lock;
 //shared memory file descriptor and pointer to shared memory object
-int shm_fd;
-void *ptr;
+// int shm_fd;
+// void *ptr;
 
 
-//STRUCTS
-// create the shared parking (not sure what should go in here)
-typedef struct shared_carpark
+// //STRUCTS
+// // create the shared parking (not sure what should go in here)
+// typedef struct shared_carpark
+// {
+//     sem_t Fire_alarm_semaphore;
+//     sem_t Manager_sempahore;
+//     sem_t Simulator_semaphore;
+
+// }shared_carpark_t;
+
+// // shared memory structure
+// typedef struct shared_memory
+// {
+//     const char *name;
+
+//     int fd;
+
+//     //address of shared carpark block
+//     shared_carpark_t *data;
+
+// }shared_memory_t;
+
+// // PARKING struct
+// typedef struct PARKING
+// {
+//     struct Exit;
+//     struct Level;
+//     struct Entrance;
+// } shared_carpark_t;
+
+
+// //FUNCTIONS
+
+// bool create_shared_object(shared_memory_t *shm, const char *share_name)
+// {
+//     shm_unlink(share_name);
+
+//     //insert share name to shm->name
+//     shm->name = share_name;
+
+//     //create shared memory object
+//     shm_fd = shm_open(share_name,O_CREAT|O_RDWR,0666);
+//     shm->fd = shm_fd; 
+
+//     //configure the size of the shared memory object
+//     ftruncate(shm_fd,PARKING_SIZE);
+
+//     ptr = mmap(0,PARKING_SIZE, MAP_SHARED, shm_fd,0);
+//     shm->data = ptr;
+
+//     return true;
+// }
+
+
+//linked list for cars
+typedef struct car car_t;
+
+struct car
 {
-    sem_t Fire_alarm_semaphore;
-    sem_t Manager_sempahore;
-    sem_t Simulator_semaphore;
+    char *licence_plate;
+};
 
-}shared_carpark_t;
-
-// shared memory structure
-typedef struct shared_memory
+void plate_print(car_t *p)
 {
-    const char *name;
+    printf("licence plate=%s\n", p->licence_plate);
+}
 
-    int fd;
+typedef struct node node_t;
 
-    //address of shared carpark block
-    shared_carpark_t *data;
-
-}shared_memory_t;
-
-// PARKING struct
-typedef struct PARKING
+// a node in a linked list of people
+struct node
 {
-    struct Exit;
-    struct Level;
-    struct Entrance;
-} shared_carpark_t;
+    car_t *car;
+    node_t *next;
+};
 
+//HASHTABLE
 //Hashtable struct && variables 
 typedef struct item item_t;
 struct item
@@ -77,27 +124,82 @@ struct htab
     size_t size;
 };
 
-
-//FUNCTIONS
-
-bool create_shared_object(shared_memory_t *shm, const char *share_name)
+// print all people in the list pointer to by head
+// pre: true
+// post: list of people printed to screen
+void node_print(node_t *head)
 {
-    shm_unlink(share_name);
+    for (; head != NULL; head = head->next)
+    {
+        plate_print(head->car);
+    }
+}
 
-    //insert share name to shm->name
-    shm->name = share_name;
+// add a car to the list pointed to by head
+// pre: head != NULL
+// post (return == NULL AND failed to allocate memory for new linked list node)
+//      OR (return == the new head of the list)
+node_t *node_add(node_t *head, car_t *car)
+{
+    //DOUBLE CHECK IF MEMORY WAS ALLOCATED.
+    //alocate memory for the new_head. 
+    node_t *new_head  = malloc(sizeof(node_t)); 
+    if(new_head == NULL)
+    {
+        return NULL;
+    }
+    new_head->car = car;
+    //pre pending saves complexity and is faster than appending.
+    new_head->next = head;
+    return new_head;
+}
 
-    //create shared memory object
-    shm_fd = shm_open(share_name,O_CREAT|O_RDWR,0666);
-    shm->fd = shm_fd; 
+// find person by name in list pointed to by head
+// pre: head != NULL
+// post (return == NULL AND name not found)
+//      OR (return == node with person named name)
+node_t *node_find_plate(node_t *head, char *licence_plate)
+{
+    for(; head != NULL; head = head->next)
+    {
+        if(strcmp(head->car->licence_plate, licence_plate) == 0)
+        {
+            return head;
+        }
+    }
+    return NULL;
+}
 
-    //configure the size of the shared memory object
-    ftruncate(shm_fd,PARKING_SIZE);
+// delete a person by name in list pointed to by head
+// pre: head != NULL
+// post: return == the new head of the list
+node_t *node_delete(node_t *head, char *licence_plate)
+{
+    node_t *prev;
+    node_t *curr = head;
+    for(; curr != NULL; curr = curr->next)
+    {
+        if(strcmp(curr->car->licence_plate, licence_plate)== 0)
+        {
+            //unlink this node
+            //if head
+            if(curr == head)
+            {
+                node_t *temp_head = head->next;
+                free(head);
+                return temp_head;
+            }
+            else
+            {
+                prev->next = curr->next;
+                free(curr);
+                return head;
+            }
+        }
+        prev = curr;
+    }
+    return head;
 
-    ptr = mmap(0,PARKING_SIZE, MAP_SHARED, shm_fd,0);
-    shm->data = ptr;
-
-    return true;
 }
 
 //time delay
@@ -115,23 +217,18 @@ void generate_plate_number()
     pthread_mutex_lock(&lock);
     char alpha[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     char num[] = "0123456789"; 
-    char plate[5];
     for(int i = 0; i <= LENGTH_LICENCEPLATE; i ++)
     {
         char number = num[rand() % (sizeof num - 1)];
         char alphabet = alpha[rand() % (sizeof alpha - 1)];
         if(i <= 2)
         {
-            //printf("%c", number);
-            strncat(plate, number, 5);
+            printf("%c", number);
         }
         else
         {
-            //printf("%c", alphabet);
-            strncat(alphabet, number, 5);
-
-        }    
-        // could just add htab_add(&h, ) per loop iteration
+            printf("%c", alphabet);
+        }       
     }
     printf("\n");
     pthread_mutex_unlock(&lock);
@@ -140,48 +237,55 @@ void generate_plate_number()
 }
 
 //reads a file.
-void read_file()
+void generate_mix_plates()
 {
     pthread_mutex_lock(&lock);
     char plate_num[7];
+    int nLines = 0;
+    char line[100];
+    int randLine;
     //open file 
     fileptr = fopen("plates.txt","r +");
 
-    // if file does not exist
+    // reads lines in the file.
     if(fileptr != NULL)
     {
-        while (!feof(fileptr))
+        while(!feof(fileptr)) 
         {
-            fscanf(fileptr,"%s",&plate_num); 
-            printf("txt %s\n",plate_num);                 
-        }  
+            fgets(line, sizeof(fileptr), fileptr);
+            nLines++;
+        }
+        randLine = rand() % nLines;
+
+        fseek(fileptr, 0, SEEK_SET);
+        for(int j = 0; j <= rand()%delay_ms(0.1); j++)
+        {
+            for (int i = 0; !feof(fileptr) && i <= randLine; i++)
+            {
+     
+                if(i <= randLine/2)
+                {
+                    fgets(line, sizeof(fileptr), fileptr);
+                    printf(" %s",line);
+                }
+                else
+                {
+                    generate_plate_number();
+                }
+                
+            }
+        } 
     }
     else
     {
         printf("Error in opening file");
         exit(1);
     }
+    fclose(fileptr);
     pthread_mutex_unlock(&lock);
 }
 
-void generate_mix_plates()
-{
-    pthread_mutex_lock(&lock);
-    for (int i = 0; i <= rand()%delay_ms(0.1); i++)
-    {
-        if(i <= rand()%1)
-        {
-            read_file();             
-        }
-        else
-        {
-            generate_plate_number(); 
-        } 
-    }
-    pthread_mutex_unlock(&lock);
-
-    
-}
+// HASHTABLE
 
 // Initialise a new hash table with n buckets.
 // pre: true
@@ -240,7 +344,7 @@ item_t *htab_find(htab_t *h, char *key)
 // pre: htab_find(h, key) == NULL
 // post: (return == false AND allocation of new item failed)
 //       OR (htab_find(h, key) != NULL)
-bool htab_add(htab_t *h, char *key, int value)
+bool htab_add(htab_t *h, char *key)
 {
     // allocate new item
     item_t *newhead = (item_t *)malloc(sizeof(item_t));
@@ -249,7 +353,7 @@ bool htab_add(htab_t *h, char *key, int value)
         return false;
     }
     newhead->key = key;
-    newhead->value = value;
+   
 
     // hash key and place item in appropriate bucket
     size_t bucket = htab_index(h, key);
@@ -258,15 +362,95 @@ bool htab_add(htab_t *h, char *key, int value)
     return true;
 }
 
+void item_print(item_t *i)
+{
+    printf("key=%s", i->key);
+}
+// Print the hash table.
+// pre: true
+// post: hash table is printed to screen
+void htab_print(htab_t *h)
+{
+    printf("hash table with %d buckets\n", h->size);
+    for (size_t i = 0; i < h->size; ++i)
+    {
+        printf("bucket %d: ", i);
+        if (h->buckets[i] == NULL)
+        {
+            printf("empty\n");
+        }
+        else
+        {
+            for (item_t *j = h->buckets[i]; j != NULL; j = j->next)
+            {
+                item_print(j);
+                if (j->next != NULL)
+                {
+                    printf(" -> ");
+                }
+            }
+            printf("\n");
+        }
+    }
+}
 
+void read_to_list(size_t buckets, htab_t h)
+{
+    FILE *fileptr = fopen("plates.txt","r");
+    if(fileptr == NULL)
+    {
+        exit(1);
+    }
+
+    char val[99];
+
+    while(fscanf(fileptr, "%s", &val)>0)
+    {
+        htab_add(&h, val);  
+        htab_print(&h);
+        printf("\n");   
+       
+    }
+     fclose(fileptr); 
+
+}
+
+// MAIN PROGRAM
 int main (void) 
 {
     time_t t;
     srand((unsigned)time(&t));
+    int enter;
 
-    generate_mix_plates();
+    printf("creating hashtable:\n");
+    size_t buckets = 50;
+    htab_t h;
 
-    fclose(fileptr);
+    if(!htab_init(&h, buckets))
+    {
+        printf("failed to initalise\n");
+        return EXIT_FAILURE;
+    }
+    read_to_list(buckets,h);  
+
+    
+    //generate_mix_plates();  
+    
+
+    // while(rand() % delay_ms(0.1))
+    // {
+    //     for (int i = 0; i <= enter; i++)
+    //     {
+    //         enter = rand()%5;
+    //     }
+    
+    //     if(enter <= 5)   
+    //     {
+    //         printf("ENTERANCE %d\n", enter);
+    //         generate_mix_plates();
+    //     }
+    // }
+    
     return 0;
 
 }
