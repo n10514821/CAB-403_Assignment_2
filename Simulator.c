@@ -13,13 +13,16 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include "mem.h"
 
 
 // DEFINES
 #define PARKING_SIZE 2920
 //generates random licence plate numbers everytime it is run
 #define LENGTH_LICENCEPLATE 5
-
+#define LEVELS 5
+#define ENTRANCES 5
+#define EXITS 5
 // GLOBALS
 // create a file pointer for communucation between file a program
 FILE *fileptr;
@@ -27,7 +30,7 @@ FILE *fileptr;
 pthread_mutex_t lock;
 //shared memory file descriptor and pointer to shared memory object
 // int shm_fd;
-// void *ptr;
+ void *ptr;
 
 
 // //STRUCTS
@@ -41,47 +44,23 @@ pthread_mutex_t lock;
 // }shared_carpark_t;
 
 // // shared memory structure
-// typedef struct shared_memory
-// {
-//     const char *name;
-
-//     int fd;
-
-//     //address of shared carpark block
-//     shared_carpark_t *data;
-
-// }shared_memory_t;
-
-// // PARKING struct
-// typedef struct PARKING
-// {
-//     struct Exit;
-//     struct Level;
-//     struct Entrance;
-// } shared_carpark_t;
+ // PARKING struct
 
 
 // //FUNCTIONS
 
-// bool create_shared_object(shared_memory_t *shm, const char *share_name)
-// {
-//     shm_unlink(share_name);
+ void create_shared_object(shared_carpark_t *shm, const char *share_name)
+ {  
+    int shm_fd;
+    shm_fd = shm_open(share_name,O_CREAT|O_RDWR,0666); 
 
-//     //insert share name to shm->name
-//     shm->name = share_name;
+     //configure the size of the shared memory object
+    ftruncate(shm_fd,PARKING_SIZE);
 
-//     //create shared memory object
-//     shm_fd = shm_open(share_name,O_CREAT|O_RDWR,0666);
-//     shm->fd = shm_fd; 
-
-//     //configure the size of the shared memory object
-//     ftruncate(shm_fd,PARKING_SIZE);
-
-//     ptr = mmap(0,PARKING_SIZE, MAP_SHARED, shm_fd,0);
-//     shm->data = ptr;
-
-//     return true;
-// }
+    ptr = mmap(0,PARKING_SIZE,PROT_READ, MAP_SHARED, shm_fd,0);
+    
+    return ptr;
+    }
 
 
 //linked list for cars
@@ -396,7 +375,7 @@ void htab_print(htab_t *h)
 
 void read_to_list(size_t buckets, htab_t h)
 {
-    FILE *fileptr = fopen("plates.txt","r");
+    FILE *fileptr = fopen("plates.txt.txt","r");
     if(fileptr == NULL)
     {
         exit(1);
@@ -431,7 +410,16 @@ int main (void)
         printf("failed to initalise\n");
         return EXIT_FAILURE;
     }
-    read_to_list(buckets,h);  
+
+    
+    read_to_list(buckets,h);
+
+    shared_carpark_t* park;
+    
+    
+
+    create_shared_object(park, 'park');
+    
 
     
     //generate_mix_plates();  

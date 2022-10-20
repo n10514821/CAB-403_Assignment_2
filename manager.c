@@ -8,6 +8,7 @@
 #include <fcntl.h>
 
 #include <Simulator.c>
+#include "mem.h"
 
 
 
