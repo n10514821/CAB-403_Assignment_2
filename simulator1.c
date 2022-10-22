@@ -25,6 +25,10 @@
 //generates random licence plate numbers everytime it is run
 #define LENGTH_LICENCEPLATE 5
 
+//number of entrances
+#define ENTRANCES 5
+
+
 // GLOBALS
 // create a file pointer for communucation between file a program
 FILE *fileptr;
@@ -32,105 +36,6 @@ FILE *fileptr;
 pthread_mutex_t lock;
 
 
-//linked list for cars
-typedef struct car car_t;
-
-struct car
-{
-    char *licence_plate;
-};
-
-void plate_print(car_t *p)
-{
-    printf("licence plate=%s\n", p->licence_plate);
-}
-
-typedef struct node node_t;
-
-// a node in a linked list of people
-struct node
-{
-    car_t *car;
-    node_t *next;
-};
-
-// print all people in the list pointer to by head
-// pre: true
-// post: list of people printed to screen
-void node_print(node_t *head)
-{
-    for (; head != NULL; head = head->next)
-    {
-        plate_print(head->car);
-    }
-}
-
-// add a car to the list pointed to by head
-// pre: head != NULL
-// post (return == NULL AND failed to allocate memory for new linked list node)
-//      OR (return == the new head of the list)
-node_t *node_add(node_t *head, car_t *car)
-{
-    //DOUBLE CHECK IF MEMORY WAS ALLOCATED.
-    //alocate memory for the new_head. 
-    node_t *new_head  = malloc(sizeof(node_t)); 
-    if(new_head == NULL)
-    {
-        return NULL;
-    }
-    new_head->car = car;
-    //pre pending saves complexity and is faster than appending.
-    new_head->next = head;
-    return new_head;
-}
-
-// find person by name in list pointed to by head
-// pre: head != NULL
-// post (return == NULL AND name not found)
-//      OR (return == node with person named name)
-node_t *node_find_plate(node_t *head, char *licence_plate)
-{
-    for(; head != NULL; head = head->next)
-    {
-        if(strcmp(head->car->licence_plate, licence_plate) == 0)
-        {
-            return head;
-        }
-    }
-    return NULL;
-}
-
-// delete a person by name in list pointed to by head
-// pre: head != NULL
-// post: return == the new head of the list
-node_t *node_delete(node_t *head, char *licence_plate)
-{
-    node_t *prev;
-    node_t *curr = head;
-    for(; curr != NULL; curr = curr->next)
-    {
-        if(strcmp(curr->car->licence_plate, licence_plate)== 0)
-        {
-            //unlink this node
-            //if head
-            if(curr == head)
-            {
-                node_t *temp_head = head->next;
-                free(head);
-                return temp_head;
-            }
-            else
-            {
-                prev->next = curr->next;
-                free(curr);
-                return head;
-            }
-        }
-        prev = curr;
-    }
-    return head;
-
-}
 
 
 //time delay
@@ -161,6 +66,8 @@ void generate_plate_number()
         else
         {   
             printf("%c", alphabet);
+
+
         }   
       
     }
@@ -171,7 +78,7 @@ void generate_plate_number()
 }
 
 //reads a file.
-void *generate_mix_plates(void *arg)
+void *generate_mix_plates()
 {
    // pthread_mutex_lock(&lock);
     char plate_num[7];
@@ -218,7 +125,6 @@ void *generate_mix_plates(void *arg)
     }
     fclose(fileptr);
    // pthread_mutex_unlock(&lock);
-    exit(0);
 
 }
 
@@ -227,10 +133,7 @@ void *generate_mix_plates(void *arg)
 
 
 
-    //declerations of thread condition variable
-    pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
-    //DECLAR MUTEX
-    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+    
 
 
 
@@ -296,23 +199,30 @@ int main (void)
 {
     time_t t;
     srand((unsigned)time(&t));
-    pthread_t thread_id, thread_id1;
+    pthread_t thread_id;
+    struct node *head = NULL;
 
-
-    // generates plate numbers at different enterances. 
-    for (int i = 0; i < 5; i++)
+    // creating file pointer to work with files
+    FILE* test = freopen("print.txt", "w a+", stdout);
+    while(1)
     {
-        printf("\nenterance %d\n",i);
-
-        for (int k = 0; k < 5; k++)
-        {
-            pthread_create(&thread_id, NULL, generate_mix_plates, (void *)&thread_id);
-            
-        }   
-         
+        generate_mix_plates();
     }
-    pthread_exit(NULL);
-    return 0;
-  
+    fclose(test);
+
+
+    // // generates plate numbers at different enterances. 
+    // for (int i = 0; i < ENTRANCES; i++)
+    // {
+    //     printf("\nenterance %d\n",i);
+
+    //     for (int k = 0; k < ENTRANCES; k++)
+    //     {
+    //         pthread_create(&thread_id, NULL, generate_mix_plates, NULL);            
+    //     }   
+        
+    // }
+
+
 
 }
