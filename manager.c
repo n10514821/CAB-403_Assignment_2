@@ -10,7 +10,27 @@
 #include <Simulator.c>
 #include "mem.h"
 
+//opening shared memory for manager
+bool create_shared_object_R( shared_memory_t* shm, const char* share_name ) {
 
+    //assigning share name to shm->name
+    shm->name = share_name;
+
+    //create shared mem object
+    if ((shm->fd = shm_open(share_name, O_RDWR, 0)) < 0){
+        shm->data = NULL;
+        return false;
+    }
+
+    //map mem segment using mmap
+    if ((shm->data = mmap(0, sizeof(shared_carpark_t), PROT_WRITE, MAP_SHARED, shm->fd, 0)) == (void *)-1)
+    {
+        return false;
+    }
+
+    //if all of the above worked return true
+    return true;
+}
 
 void managerSetup(){
     // read plates.txt into hash table

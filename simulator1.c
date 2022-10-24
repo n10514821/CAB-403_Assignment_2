@@ -15,7 +15,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <stddef.h>
-
+#include "mem.h"
 
 
 
@@ -35,7 +35,91 @@ FILE *fileptr;
 //create a mutex lock
 pthread_mutex_t lock;
 
+//creating shared memory for simulator
+bool create_shared_memory(shared_memory_t* shm, const char* name){
+    //removing previous instances of the shared memory object
+    shm_unlink(name);
 
+    //assigning share name to shm->name
+    shm->name = name;
+
+    //create shared mem object
+
+    if ((shm->fd = shm_open(name, O_CREAT | O_RDWR, 0666)) < 0)
+    {
+        shm->data = NULL;
+        return false;
+    }
+    
+    // Set the capacity of the shared memory object using ftruncate
+    
+    if ((ftruncate(shm->fd, sizeof(shared_carpark_t))) < 0){
+        shm->data = NULL;
+        return false;
+    }
+
+    //map mem segment using mmap
+     if ((shm->data = mmap(0, sizeof(shared_carpark_t), PROT_READ | PROT_WRITE, MAP_SHARED, shm->fd, 0)) == (void *)-1){
+      return false;
+    }
+
+    //if all of the above worked return true 
+    return true;
+
+}
+
+//setting Inter-process communication for the shared memory (page 7 of spec sheet)
+void initSharedMem(shared_memory_t shm){
+    pthread_mutexattr_t mute;
+    pthread_cond_t con;
+    pthread_mutexattr_init(&mute);
+    pthread_condattr_init(&con);
+    pthread_mutexattr_setpshared(&mute, PTHREAD_PROCESS_SHARED);
+    pthread_condattr_setpshared(&con, PTHREAD_PROCESS_SHARED);
+
+    //for each level initialise mutex & condt variables, 
+    for (int i = 0; i < levels;i++){
+        //lp sensors
+        pthread_mutex_init(&shm.data->level[i].lpr.lock, &mute);
+        pthread_cond_init(&shm.data->level[i].lpr.condition, &con);
+        shm.data->level[i].alarm = '0';
+        shm.data->level[i].tempsense = 24;
+    }
+    
+    //For each entrance, init mutex & condt variables
+    for (int i = 0;i < entrances;i++){
+
+        // lp sensors
+        pthread_mutex_init(&shm.data->entrance[i].lpr.lock, &mute);
+        pthread_cond_init(&shm.data->entrance[i].lpr.condition, &con);
+
+        // boomGates
+        pthread_mutex_init(&shm.data->entrance[i].boomGateEn.lock, &mute);
+        pthread_cond_init(&shm.data->entrance[i].boomGateEn.condition, &con);
+
+        // signs
+        pthread_mutex_init(&shm.data->entrance[i].sign.lock, &mute);
+        pthread_cond_init(&shm.data->entrance[i].sign.condition, &con);
+
+        // sets boomGates C or closed
+        shm.data->entrance[i].boomGateEn.status = "C";
+        strcpy(shm.data->entrance[i].lpr.licensePlate, "xxxxxx");
+    }
+
+    for (int i = 0;i < exits;i++){
+        // lp sensors
+        pthread_mutex_init(&shm.data->exit[i].lpr.lock, &mute);
+        pthread_cond_init(&shm.data->exit[i].lpr.condition, &con);
+        // boomGates
+        pthread_mutex_init(&shm.data->exit[i].boomGateEx.lock, &mute);
+        pthread_cond_init(&shm.data->exit[i].boomGateEx.condition, &con);
+
+        // sets gates to 'C' / closed
+        shm.data->exit[i].boomGateEx.status = 'C';
+        strcpy(shm.data->exit[i].lpr.licensePlate, "xxxxxx");
+    }
+
+}
 
 
 //time delay
@@ -86,7 +170,7 @@ void *generate_mix_plates()
     char line[100];
     int randLine;
     //open file 
-    fileptr = fopen("plates.txt","r +");
+    fileptr = fopen("plates.txt.txt","r +");
 
     // reads lines in the file.
     if(fileptr != NULL)
@@ -201,7 +285,7 @@ int main (void)
     srand((unsigned)time(&t));
     pthread_t thread_id;
     struct node *head = NULL;
-
+    
     // creating file pointer to work with files
     FILE* test = freopen("print.txt", "w a+", stdout);
     while(1)
@@ -210,7 +294,7 @@ int main (void)
     }
     fclose(test);
 
-
+    
     // // generates plate numbers at different enterances. 
     // for (int i = 0; i < ENTRANCES; i++)
     // {

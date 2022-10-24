@@ -1,16 +1,31 @@
 #pragma once
 
+#define entrances 5
+#define levels 5
+#define exits 5
+
+
 typedef struct boomGate{
     pthread_mutex_t lock;
     pthread_cond_t condition;
-    char status[1];
+    char status;
     char pad[7];
 
 
 }boomGate;
 
+typedef struct tempSense
+{
+    int temp;
+};
 
-struct lpr
+typedef struct alarm
+{
+    char on[1];
+};
+
+
+typedef struct lpr
 {
     pthread_mutex_t lock;
     pthread_cond_t condition;
@@ -29,47 +44,49 @@ typedef struct sign
 
 typedef struct level
 {
-    struct boomGate boomgate;
-    struct sign sign;
-    struct lpr lpr;
+    lpr lpr;
+    
+    tempSense tempsense;
 
+    alarm alarm;
     char pad[5];
     
-}level;
+}shared_level_t;
 
 typedef struct entrance
 {
-    struct boomGate boomGate;
-    struct lpr lpr;
-    struct sign sign;
+    boomGate boomGateEn;
+    lpr lpr;
+    sign sign;
 
-};
+}shared_entrance_t;
 
 typedef struct exit
 {
-    struct boomGate boomGate;
-    struct sign sign;
+    lpr lpr;
+    boomGate boomGateEx;
+    sign sign;
     
-};
+}shared_exit_t;
 
 typedef struct PARKING
 {
     /* data */
 
-    struct entrance entrance;
-    struct exit exit;
-    struct level level;
+    shared_entrance_t entrance[entrances];
+    shared_exit_t exit[exits];
+    shared_level_t level[levels];
 
     
 }shared_carpark_t;
 
-struct shm
+typedef struct shm
 {
     const char* name;
 
     int fd;
 
-    struct PARKING parking;
+    shared_carpark_t* data;
     
-};
+}shared_memory_t*;
 
