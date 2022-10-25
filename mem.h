@@ -17,12 +17,12 @@ typedef struct boomGate{
 typedef struct tempSense
 {
     int temp;
-};
+}tempSense;
 
 typedef struct alarm
 {
-    char on[1];
-};
+    char on;
+}alarm1;
 
 
 typedef struct lpr
@@ -48,7 +48,8 @@ typedef struct level
     
     tempSense tempsense;
 
-    alarm alarm;
+    alarm1 alarm;
+
     char pad[5];
     
 }shared_level_t;
@@ -88,5 +89,5 @@ typedef struct shm
 
     shared_carpark_t* data;
     
-}shared_memory_t*;
+}shared_memory_t;
 

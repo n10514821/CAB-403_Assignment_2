@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -53,17 +52,18 @@ bool create_shared_memory(shared_memory_t* shm, const char* name){
     
     // Set the capacity of the shared memory object using ftruncate
     
-    if ((ftruncate(shm->fd, sizeof(shared_carpark_t))) < 0){
+    if ((ftruncate(shm->fd, PARKING_SIZE)) < 0){
         shm->data = NULL;
         return false;
     }
 
     //map mem segment using mmap
-     if ((shm->data = mmap(0, sizeof(shared_carpark_t), PROT_READ | PROT_WRITE, MAP_SHARED, shm->fd, 0)) == (void *)-1){
+     if ((shm->data = mmap(0, PARKING_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm->fd, 0)) == (void *)-1){
       return false;
     }
 
     //if all of the above worked return true 
+    printf("aaa");
     return true;
 
 }
@@ -71,7 +71,7 @@ bool create_shared_memory(shared_memory_t* shm, const char* name){
 //setting Inter-process communication for the shared memory (page 7 of spec sheet)
 void initSharedMem(shared_memory_t shm){
     pthread_mutexattr_t mute;
-    pthread_cond_t con;
+    pthread_condattr_t con;
     pthread_mutexattr_init(&mute);
     pthread_condattr_init(&con);
     pthread_mutexattr_setpshared(&mute, PTHREAD_PROCESS_SHARED);
@@ -82,8 +82,8 @@ void initSharedMem(shared_memory_t shm){
         //lp sensors
         pthread_mutex_init(&shm.data->level[i].lpr.lock, &mute);
         pthread_cond_init(&shm.data->level[i].lpr.condition, &con);
-        shm.data->level[i].alarm = '0';
-        shm.data->level[i].tempsense = 24;
+        shm.data->level[i].alarm.on = '0';
+        shm.data->level[i].tempsense.temp = 24;
     }
     
     //For each entrance, init mutex & condt variables
@@ -102,7 +102,7 @@ void initSharedMem(shared_memory_t shm){
         pthread_cond_init(&shm.data->entrance[i].sign.condition, &con);
 
         // sets boomGates C or closed
-        shm.data->entrance[i].boomGateEn.status = "C";
+        shm.data->entrance[i].boomGateEn.status = 'C';
         strcpy(shm.data->entrance[i].lpr.licensePlate, "xxxxxx");
     }
 
@@ -277,22 +277,25 @@ void *TriggerLPR()
     //trigger LPR 
 }
 
-
+//public variazbles
+shared_memory_t shm;
 // MAIN PROGRAM
 int main (void) 
 {
-    time_t t;
-    srand((unsigned)time(&t));
-    pthread_t thread_id;
-    struct node *head = NULL;
+
+    create_shared_memory(&shm, "PARKING");
+  //  time_t t;
+  //  srand((unsigned)time(&t));
+ //   pthread_t thread_id;
+  //  struct node *head = NULL;
     
     // creating file pointer to work with files
-    FILE* test = freopen("print.txt", "w a+", stdout);
-    while(1)
-    {
-        generate_mix_plates();
-    }
-    fclose(test);
+ //   FILE* test = freopen("print.txt", "w a+", stdout);
+ //   while(1)
+ //   {
+//        generate_mix_plates();
+ //   }
+ //   fclose(test);
 
     
     // // generates plate numbers at different enterances. 
