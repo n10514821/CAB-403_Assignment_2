@@ -22,20 +22,26 @@
 // DEFINES
 #define PARKING_SIZE 2920
 //generates random licence plate numbers everytime it is run
-#define LENGTH_LICENCEPLATE 5
 
 //number of entrances
 
 
 
 // GLOBALS
-int car_index;
-char textplates[100][7];
+
 // create a file pointer for communucation between file a program
 FILE *fileptr;
 //create a mutex lock
 pthread_mutex_t lock;
+shared_memory_t shm;
+char *generatePlate(int probability);
+int randomIntGenerator(int min, int max);
+char* random_license_plate_generator();
 
+void readtextFile(char *file);
+void printFile();
+char textplates[100][7];
+int car_index;
 //creating shared memory for simulator
 bool create_shared_memory(shared_memory_t* shm, const char* name){
     //removing previous instances of the shared memory object
@@ -84,8 +90,8 @@ void initSharedMem(shared_memory_t shm){
         //lp sensors
         pthread_mutex_init(&shm.data->level[i].lpr.lock, &mute);
         pthread_cond_init(&shm.data->level[i].lpr.condition, &con);
-        shm.data->level[i].alarm.on = '0';
-        shm.data->level[i].tempsense.temp = 24;
+        shm.data->level[i].alarm = '0';
+        shm.data->level[i].tempsense = 24;
     }
     
     //For each entrance, init mutex & condt variables
@@ -181,6 +187,7 @@ void popRandom(queue_t* carQueue, int index){
 }
 
 
+
 /*Car spawning method*/
 
 //public variable for a queue
@@ -189,7 +196,7 @@ queue_t queue_entrances[entrances];
 //public variable for entrance mutex
 pthread_mutex_t mutex_q[entrances];
 
-#define max_cars_generated 8
+#define max_cars_generated 10
 
 void *Car(void *args) {
     char* licensePlate;  
@@ -203,7 +210,8 @@ void *Car(void *args) {
     for (int i = 0;i < max_cars_generated;i++){
 
         // Numberplate gen for car
-        licensePlate = generatePlate(80);
+        licensePlate = generatePlate(50);
+        
         car_index++;
 
         // every 1 10 100 milliseconds a car is generated
@@ -225,20 +233,6 @@ void *Car(void *args) {
     return 0;
 } 
 
-
-void readtextfile(char *text){
-     FILE* file = fopen(text, "r");
-
-    // Fill array
-    int i = 0;
-
-    while (fgets(textplates[i], 10, file)) {
-        textplates[i][strlen(textplates[i]) - 1] = '\0';
-        i++;
-    }
-}
-
-
 //Entrance Simulation
 
 void eSim(void *arg){
@@ -258,27 +252,23 @@ void eSim(void *arg){
 
         while(queue_entrances[i].s <=0);
 
+        pthread_mutex_lock(&shm.data->entrance[i].lpr.lock);
+        pthread_mutex_lock(&mutex_q[i]);
+        strcpy(shm.data->entrance[i].lpr.licensePlate, queue_entrances[i].cont[0]);
+        pthread_mutex_unlock(&mutex_q[i]);
+        pthread_mutex_unlock(&shm.data->entrance[i].lpr.lock);
+
+        usleep(2000);
 
         pthread_cond_signal(&shm.data->entrance[i].lpr.condition);
         pthread_mutex_lock(&mutex_q[i]);
         popPlate(&queue_entrances[i]);
         pthread_mutex_unlock(&mutex_q[i]);
-
+        
     }
 }
 
-char* license_plate_generator(int chance){
 
-    int rand = randomIntGenerator(0, 100);
-
-    if (rand <= chance){
-        return textplates[car_index];
-    }
-    else{
-        char *p = randomPlate();
-        return p;
-    }
-}
 
 // Constructs a random plate
 char* random_license_plate_generator(){
@@ -310,41 +300,132 @@ int randomIntGenerator(int min, int max){
 }
 
 
+
+
+
+#define FIRE 0
+
+void *tempSensorSimulate(void *arg) {
+    int i = *(int*) arg;
+    int16_t temperature;
+    int16_t currentTemp;
+
+    for (;;) {
+        usleep(2000);
+        if (FIRE == 1) { // (Fixed temp fire detection data)
+            // Generate temperatures to trigger fire alarm via Temps > 58 degrees
+            temperature = (int16_t) randomIntGenerator(58, 65);
+            shm.data->level[i].tempsense = temperature;
+        }
+        else if (FIRE == 2) { // (Rate-of-rise fire detection data)
+            // Generate temperatures to trigger fire alarm via Rate-of-rise (Most recent temp >= 8 degrees hotter than 30th most recent)
+            if (shm.data->level[i].tempsense > 58){
+                currentTemp = 24;
+            }
+            else {
+                currentTemp = shm.data->level[i].tempsense;
+            }
+            temperature = randomIntGenerator(currentTemp, currentTemp + 2);
+            shm.data->level[i].tempsense = temperature;
+        }
+        else {
+            // Generate normal temperatures to avoid setting off fire alarm
+            temperature = (int16_t) 24;
+            shm.data->level[i].tempsense = temperature;
+        }    
+    }
+}
+
 //public variazbles
-shared_memory_t shm;
+
 // MAIN PROGRAM
 int main (void) 
 {
+    
+
+     car_index = 0;
+
+    pthread_t Spawn_Car;
+    pthread_t e_thread[entrances];
+    pthread_t t_thread[levels];
+    
+    for (int i = 0; i < entrances; i++){
+        pthread_mutex_init(&mutex_q[entrances], NULL);
+    }
+
+    time_t t;
+    srand((unsigned) time(&t));
 
     create_shared_memory(&shm, "PARKING");
-    generate_mix_plates();
-   // generate_mix_plates();
-  //  time_t t;
-  //  srand((unsigned)time(&t));
- //   pthread_t thread_id;
-  //  struct node *head = NULL;
     
-    // creating file pointer to work with files
- //   FILE* test = freopen("print.txt", "w a+", stdout);
- //   while(1)
- //   {
-//        generate_mix_plates();
- //   }
- //   fclose(test);
+    initSharedMem(shm);
+
+    readtextfile("plates.txt");
 
     
-    // // generates plate numbers at different enterances. 
-    // for (int i = 0; i < ENTRANCES; i++)
-    // {
-    //     printf("\nenterance %d\n",i);
+    int i;
+    pthread_create(&Spawn_Car, NULL, &Car, NULL);
+    
 
-    //     for (int k = 0; k < ENTRANCES; k++)
-    //     {
-    //         pthread_create(&thread_id, NULL, generate_mix_plates, NULL);            
-    //     }   
+    for(i = 0; i<entrances; i++){
+        int* point = malloc(sizeof(int));
+        *point = i;
+        pthread_create(&e_thread[i], NULL, &eSim, point);
+    }
+
+    for (i = 0; i < levels; i++){
+        int* z = malloc(sizeof(int));
+        *z = i;
+        pthread_create(&t_thread[i], NULL, &tempSensorSimulate, z);
+    }
+
+    pthread_join(Spawn_Car, NULL);
+
+    for (i = 0; i < entrances; i++){
+        pthread_join(e_thread[i], NULL);
+    }
+
+     for (i = 0; i < levels; i++){
+        pthread_join(t_thread[i],NULL);
+    } 
+    
+    
+
+}
+
+
+
+char* generatePlate(int probability){
+    int random = randomIntGenerator(0, 100);
+    if (random <= probability){
+        return textplates[car_index];
+    }
+    else{
+        char *p = random_license_plate_generator();
+        return p;
+    }
+}
+
+void readtextfile(char *text){
+      FILE* file = fopen(text, "r");
+
+    // Fill array
+    
+     int i = 0;
+    while (fgets(textplates[i], 10, file)) {
+        textplates[i][strlen(textplates[i]) - 1] = '\0';
+        i++;
+    }
+    
+    
+}
+
+void printFile(){
+	printf("\n The content of the file  are : \n");    
+    for(int i = 0; i < 100; i++)
+    {
+        printf("%s, ", textplates[i]);
         
-    // }
-
-
-
+    }
+    printf("\n");
 }

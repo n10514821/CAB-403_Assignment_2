@@ -14,15 +14,6 @@ typedef struct boomGate{
 
 }boomGate;
 
-typedef struct tempSense
-{
-    int temp;
-}tempSense;
-
-typedef struct alarm
-{
-    char on;
-}alarm1;
 
 
 typedef struct lpr
@@ -46,9 +37,9 @@ typedef struct level
 {
     lpr lpr;
     
-    tempSense tempsense;
+    volatile int16_t tempsense; 
 
-    alarm1 alarm;
+    volatile char alarm;
 
     char pad[5];
     
