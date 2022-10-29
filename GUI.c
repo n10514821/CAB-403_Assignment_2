@@ -145,11 +145,8 @@ for (int i=0;i<sizeof(Table_Header_Present_1);i++){
 }
 
 
-// For each level
-//Note
-//1 entry and 1 exit boom gate per level
-//Note this should be changed to #define when incomporated
 
+//
 
 int selected_level=1;
 for(int k= 1; k<=Number_of_levels*2;k++){
@@ -165,7 +162,7 @@ if( k & 1==1){
     }
     
 
- //Insert coloumns into table 
+ //Insert coloumns and data into table 
 for(int i=0;i<sizeof(Print_Level);i++){
     if( k & 1==1){
     GUI[5+k][1+i] = Print_Level[i];
@@ -179,6 +176,73 @@ for(int i=0;i<sizeof(Print_Level);i++){
     GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)] ='|';
     GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+sizeof(Table_Header_State_of_fire_alarm)-1]  ='|';
     GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+sizeof(Table_Header_State_of_fire_alarm)+ sizeof(Table_Header_Temperature)-1]  ='|';
+    
+    
+    //INSERT DATA INTO COLOUMNS 
+
+
+    //entry gate status
+    
+    GUI[5+k][10+4] ='t';
+  
+    //exit gate status
+    
+    GUI[5+k][9+sizeof(Table_Header_Entry_Boom_gate)+5] ='s';
+    
+
+    //entry LPR
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+2] ='a';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+3] ='a';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+4] ='a';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+5] ='a';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+6] ='a';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+7] ='a';
+
+    //exit LPR
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+2] ='x';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+3] ='x';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+4] ='x';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+5] ='x';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+6] ='x';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+7] ='x';
+
+    //digital sign
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+5] ='v';
+
+
+
+    //# of cars
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+6] ='e';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+7] ='e';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+8] ='e';
+
+
+
+    //Capacity of cars
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+5] ='k';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+6] ='k';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+7] ='k';
+
+
+
+    //Fire Alarm
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+5] ='m';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+6] ='m';
+ 
+
+
+    //Temperature
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+sizeof(Table_Header_State_of_fire_alarm)+4]  ='h';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+sizeof(Table_Header_State_of_fire_alarm)+5]  ='h';
+    GUI[5+k][9 +sizeof(Table_Header_Entry_Boom_gate)+sizeof(Table_Header_Exit_Boom_gate)+sizeof(Table_Header_Entry_LPR)+ sizeof(Table_Header_Exit_LPR)+sizeof(Table_Header_Digital_sign)+sizeof(Table_Header_Number_of_cars)+sizeof(Table_Header_Car_Capacity)+sizeof(Table_Header_State_of_fire_alarm)+6]  ='h';
+
+
+    //total revenue:
+    GUI[5 +Number_of_levels*2 +2][9+sizeof(Total_revenue)]='t';
+    GUI[5 +Number_of_levels*2 +2][9+sizeof(Total_revenue)+1]='t';
+    GUI[5 +Number_of_levels*2 +2][9+sizeof(Total_revenue)+2]='.';
+    GUI[5 +Number_of_levels*2 +2][9+sizeof(Total_revenue)+3]='t';
+    GUI[5 +Number_of_levels*2 +2][9+sizeof(Total_revenue)+4]='t';
     }
   
 }
