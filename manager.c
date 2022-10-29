@@ -6,8 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
-
-#include <Simulator.c>
+#include <simulator1.c>
 #include "mem.h"
 
 //opening shared memory for manager
