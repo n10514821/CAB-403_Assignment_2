@@ -326,6 +326,24 @@ int x,y;
 #define Entrance 1
 #define Exit 0
 
+bool evacuate = false;
+
+
+
+carpark_t* carpark1;
+
+
+
+shared_memory_t shm;
+
+
+
+pthread_mutex_t levellock[levels];
+
+int carsinlevel[levels];
+
+
+
 void initialisecarpark(carpark_t *carpark_space){
     carpark_space->s = 0;
 
@@ -338,6 +356,82 @@ void initialisecarpark(carpark_t *carpark_space){
         carpark_space->car[i].lpr_index = 0;
     }
 }
+
+void evacmessage(char letter){
+
+    //called as evacmessage(e), evacmessage(v), evacmessage(a) and so on
+
+    for (int i = 0; i < 5; i++){
+
+        pthread_mutex_lock(&shm.data->entrance[i].sign.lock);
+
+        shm.data->entrance[i].sign.display = letter;
+
+        pthread_mutex_unlock(&shm.data->entrance[i].sign.lock);
+
+    }
+
+    usleep(200000);
+
+}
+
+void firedetect(void){
+
+    for(int i = 1; i <= 5; i++){
+
+        if (shm.data->level[i].alarm == 1){
+
+            evacuate = true;
+
+        }
+
+    }
+
+}
+
+
+
+void opencarparkup(){
+
+    for (int i = 1; i <= entrances; ){
+
+        pthread_mutex_lock(&shm.data->entrance[i].boomGateEn.lock);
+
+        shm.data->entrance[i].boomGateEn.status ='R';
+
+        pthread_mutex_unlock(&shm.data->entrance[i].boomGateEn.lock);
+
+    usleep(10000);
+
+        pthread_mutex_lock(&shm.data->entrance[i].boomGateEn.lock);
+
+        shm.data->entrance[i].boomGateEn.status ='O';
+
+        pthread_mutex_unlock(&shm.data->entrance[i].boomGateEn.lock);
+
+
+
+        i++;
+
+    }
+
+
+    for (int i = 0; i < levels;){
+
+        pthread_mutex_lock(&levellock[i]);
+
+        carsinlevel[i] = 0;
+
+        pthread_mutex_unlock(&levellock[i]);
+
+        i++;
+
+    }
+
+}
+
+
+
 
 void carUpdate(carpark_t* carpark_space, char* licensePlate, clock_t enter, clock_t park, int level){
 
