@@ -29,7 +29,7 @@ typedef struct sign
 {
     pthread_mutex_t lock;
     pthread_cond_t condition;
-    char display[1];
+    char display;
     char pad[7];
 }sign;
 

@@ -127,6 +127,7 @@ void initSharedMem(shared_memory_t shm){
     pthread_condattr_setpshared(&con, PTHREAD_PROCESS_SHARED);
 
     //for each level initialise mutex & condt variables, 
+    int i = 0;
     for (int i = 0; i < levels;i++){
         //lp sensors
         pthread_mutex_init(&shm.data->level[i].lpr.lock, &mute);
@@ -138,36 +139,37 @@ void initSharedMem(shared_memory_t shm){
     }
     
     //For each entrance, init mutex & condt variables
-    for (int i = 0;i < entrances;i++){
+    int k = 0;
+    for (int k = 0;k < entrances;k++){
 
         // entrance lp sensors mutex and condition
-        pthread_mutex_init(&shm.data->entrance[i].lpr.lock, &mute);
-        pthread_cond_init(&shm.data->entrance[i].lpr.condition, &con);
+        pthread_mutex_init(&shm.data->entrance[k].lpr.lock, &mute);
+        pthread_cond_init(&shm.data->entrance[k].lpr.condition, &con);
 
         // entrance boomGates mutex and condition
-        pthread_mutex_init(&shm.data->entrance[i].boomGateEn.lock, &mute);
-        pthread_cond_init(&shm.data->entrance[i].boomGateEn.condition, &con);
+        pthread_mutex_init(&shm.data->entrance[k].boomGateEn.lock, &mute);
+        pthread_cond_init(&shm.data->entrance[k].boomGateEn.condition, &con);
 
         // entrance signs mutex and condition
-        pthread_mutex_init(&shm.data->entrance[i].sign.lock, &mute);
-        pthread_cond_init(&shm.data->entrance[i].sign.condition, &con);
+        pthread_mutex_init(&shm.data->entrance[k].sign.lock, &mute);
+        pthread_cond_init(&shm.data->entrance[k].sign.condition, &con);
 
         // entrance sets boomGates C or closed and set init lpr to xxxxxx
-        shm.data->entrance[i].boomGateEn.status = 'C';
-        strcpy(shm.data->entrance[i].lpr.licensePlate, "xxxxxx");
+        shm.data->entrance[k].boomGateEn.status = 'C';
+        strcpy(shm.data->entrance[k].lpr.licensePlate, "xxxxxx");
     }
 
-    for (int i = 0;i < exits;i++){
+    for (int j = 0;j < exits;j++){
         // exit lp sensors
-        pthread_mutex_init(&shm.data->exit[i].lpr.lock, &mute);
-        pthread_cond_init(&shm.data->exit[i].lpr.condition, &con);
+        pthread_mutex_init(&shm.data->exit[j].lpr.lock, &mute);
+        pthread_cond_init(&shm.data->exit[j].lpr.condition, &con);
         // exit boomGates
-        pthread_mutex_init(&shm.data->exit[i].boomGateEx.lock, &mute);
-        pthread_cond_init(&shm.data->exit[i].boomGateEx.condition, &con);
+        pthread_mutex_init(&shm.data->exit[j].boomGateEx.lock, &mute);
+        pthread_cond_init(&shm.data->exit[j].boomGateEx.condition, &con);
 
         // exit sets gates to 'C' / closed
-        shm.data->exit[i].boomGateEx.status = 'C';
-        strcpy(shm.data->exit[i].lpr.licensePlate, "xxxxxx");
+        shm.data->exit[j].boomGateEx.status = 'C';
+        strcpy(shm.data->exit[j].lpr.licensePlate, "xxxxxx");
     }
 
 }
@@ -180,13 +182,15 @@ void initSharedMem(shared_memory_t shm){
 // create queue
 void createqueue(queue_t *carQueue){
     //setting queue size s to 0
+    int size = 0;
     carQueue->s = 0;
 
+    size++;
     //for each spot in the queue
     for (int i = 0; i < MAX; i++){
 
     // emtpy each queue spot 
-        strcpy(carQueue->cont[i], "empty");
+        strcpy(carQueue->cont[i], "blank");
     }
 }
 
@@ -206,12 +210,15 @@ void car_enters(queue_t* Queue){
     //saving old size of queue
     int old_size = Queue->s;
 
+    int new_size = old_size;
+
     //saving old array of cars
     char old_data[MAX][CAP];
 
     //copying over old data to a new queue
     for (int i = 0; i < old_size; i++){
         strcpy(old_data[i], Queue->cont[i]);
+        new_size++;
     }
 
     //adding + 1 to the index
@@ -372,39 +379,6 @@ int randomIntGenerator(int min, int max){
 
 
 
-#define FIRE 0
-
-void *tempSensorSimulate(void *arg) {
-    int i = *(int*) arg;
-    int16_t temperature;
-    int16_t currentTemp;
-
-    for (;;) {
-        usleep(2000);
-        
-        if (FIRE == 1) { // (Fixed temp fire detection data)
-            // Generate temperatures to trigger fire alarm via Temps > 58 degrees
-            temperature = (int16_t) randomIntGenerator(58, 65);
-            shm.data->level[i].tempsense = temperature;
-        }
-        else if (FIRE == 2) { // (Rate-of-rise fire detection data)
-            // Generate temperatures to trigger fire alarm via Rate-of-rise (Most recent temp >= 8 degrees hotter than 30th most recent)
-            if (shm.data->level[i].tempsense > 58){
-                currentTemp = 24;
-            }
-            else {
-                currentTemp = shm.data->level[i].tempsense;
-            }
-            temperature = randomIntGenerator(currentTemp, currentTemp + 2);
-            shm.data->level[i].tempsense = temperature;
-        }
-        else {
-            // Generate normal temperatures to avoid setting off fire alarm
-            temperature = (int16_t) 24;
-            shm.data->level[i].tempsense = temperature;
-        }    
-    }
-}
 
 
 
@@ -416,16 +390,13 @@ int main (void)
     //setting up threads for car spawing, entrances and the temprature
     pthread_t Spawn_Car;
     pthread_t e_thread[entrances];
-    pthread_t t_thread[levels];
+
 
     //for each entrance, setup mutex
     for (int i = 0; i < entrances; i++){
         pthread_mutex_init(&mutex_q[entrances], NULL);
     }
 
-    //setup time for temprature
-    time_t t;
-    srand((unsigned) time(&t));
 
     //create shm
     create_shared_memory(&shm, "PARKING");
@@ -447,11 +418,6 @@ int main (void)
         pthread_create(&e_thread[i], NULL, &eSim, point);
     }
 
-    for (i = 0; i < levels; i++){
-        int* z = malloc(sizeof(int));
-        *z = i;
-        pthread_create(&t_thread[i], NULL, &tempSensorSimulate, z);
-    }
 
     pthread_join(Spawn_Car, NULL);
 
@@ -459,9 +425,7 @@ int main (void)
         pthread_join(e_thread[i], NULL);
     }
 
-     for (i = 0; i < levels; i++){
-        pthread_join(t_thread[i],NULL);
-    }   
+     
     
     
 
