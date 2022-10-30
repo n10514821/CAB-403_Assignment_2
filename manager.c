@@ -329,19 +329,33 @@ int x,y;
 bool evacuate = false;
 
 
-
 carpark_t* carpark1;
-
 
 
 shared_memory_t shm;
 
 
 
+char textplates[100][7];
+
 pthread_mutex_t levellock[levels];
+
 
 int carsinlevel[levels];
 
+
+pthread_mutex_t parkingStore;
+
+
+//borrowed from stackoverflow
+
+int randomIntGenerator(int min, int max){
+
+    int randomNumber = (rand() % (max - min + 1)) + min;
+
+    return randomNumber;
+
+}
 
 
 void initialisecarpark(carpark_t *carpark_space){
@@ -522,48 +536,242 @@ bool create_shared_object_R( shared_memory_t* shm, const char* share_name ) {
 }
 
 
-bool OpenThenCloseBoomGate(int gateType, int gateNum){
-    // Setup Variables for accessing memory
-    int statusAddress;
-    int conditionAddress;
-    pthread_cond_t gateMutex;
+void OpenEntranceBoomGate(void *arg){
 
-    if(gateType == Entrance){
-        statusAddress = 184 + (gateNum-1)*288;
-        conditionAddress = 136 + (gateNum-1)*288;
-        gateMutex = &shm.data->entrance[gateNum].lpr.lock;
-        
-    }else if(gateType == Exit){
-        statusAddress = 1624 + (gateNum-1)*192;
-        conditionAddress = 1576 + (gateNum-1)*192;
-        gateMutex = (pthread_cond_t *)(ptr + 1536 + (gateNum-1)*192);
-    } else {
-        printf("ERROR: invalid gate type");
-        return false;
+    // Setup Variables for accessing memory
+
+    int i = *(int*) arg;
+
+    while(evacuate == true){
+
+        evacmessage('E');
+
+        evacmessage('V');
+
+        evacmessage('A');
+
+        evacmessage('C');
+
+        evacmessage('U');
+
+        evacmessage('A');
+
+        evacmessage('T');
+
+        evacmessage('E');
+
+        firedetect();
+
+        return 0;
+
     }
 
-    // Open gate (takes 10 ms)
-    // set character status to 'R'
-    pthread_mutex_lock(gateMutex);
-    (char *)(ptr + statusAddress) = "R";
-    pthread_mutex_unlock(gateMutex);
-    pthread_cond_signal((pthread_cond_t *)(ptr + conditionAddress));
+    while(evacuate != true){
 
-    // wait 30ms (10 for gate to open, 20 for car to enter/exit)
-    sleep(0.03);
+        pthread_mutex_lock(&shm.data->entrance[i].boomGateEn.lock);
 
-    // Close gate (takes 10 ms)
-    // set character status to 'L'
-    pthread_mutex_lock(gateMutex);
-    (char *)(ptr + statusAddress) = "L";
-    pthread_mutex_unlock(gateMutex);
-    pthread_cond_signal((pthread_cond_t *)(ptr + conditionAddress));
-    
-    return true;
+        while (shm.data->entrance[i].boomGateEn.status == 'C')
+
+        {
+
+            pthread_cond_wait(&shm.data->entrance[i].boomGateEn.condition, &shm.data->entrance[i].boomGateEn.lock);
+
+        }
+
+        pthread_mutex_unlock(&shm.data->entrance[i].boomGateEn.lock);
+
+
+        //setting gate open
+        pthread_mutex_lock(&shm.data->entrance[i].boomGateEn.lock);
+
+        shm.data->entrance[i].boomGateEn.status = 'O';
+
+        pthread_mutex_unlock(&shm.data->entrance[i].boomGateEn.lock);
+
+        pthread_cond_signal(&shm.data->entrance[i].boomGateEn.condition);
+
+
+
+        //wait for car to enter
+
+        usleep(20000);
+
+
+
+        pthread_mutex_lock(&shm.data->entrance[i].boomGateEn.lock);
+
+        shm.data->entrance[i].boomGateEn.status = 'C';
+
+        pthread_mutex_unlock(&shm.data->entrance[i].boomGateEn.lock);
+
+    }
+
 }
 
+void OpenExitBoomGate(void *arg){
+
+    // Setup Variables for accessing memory
+
+    int i = *(int*) arg;
+
+
+
+    while(evacuate == true){
+
+        evacmessage('E');
+
+        evacmessage('V');
+
+        evacmessage('A');
+
+        evacmessage('C');
+
+        evacmessage('U');
+
+        evacmessage('A');
+
+        evacmessage('T');
+
+        evacmessage('E');
+
+        firedetect();
+
+        return 0;
+
+    }
+
+
+
+    while(evacuate != true){
+
+        pthread_mutex_lock(&shm.data->exit[i].boomGateEx.lock);
+
+        while (shm.data->exit[i].boomGateEx.status == 'C')
+
+        {
+
+            pthread_cond_wait(&shm.data->exit[i].boomGateEx.condition, &shm.data->exit[i].boomGateEx.lock);
+
+        }
+
+        pthread_mutex_unlock(&shm.data->exit[i].boomGateEx.lock);
+
+        
+        //setting gate open
+
+        pthread_mutex_lock(&shm.data->exit[i].boomGateEx.lock);
+
+        shm.data->exit[i].boomGateEx.status = 'O';
+
+        pthread_mutex_unlock(&shm.data->exit[i].boomGateEx.lock);
+
+        pthread_cond_signal(&shm.data->exit[i].boomGateEx.condition);
+
+
+
+        //wait for car to enter
+
+        usleep(20000);
+
+
+
+        pthread_mutex_lock(&shm.data->exit[i].boomGateEx.lock);
+
+        shm.data->exit[i].boomGateEx.status = 'C';
+
+        pthread_mutex_unlock(&shm.data->exit[i].boomGateEx.lock);
+
+    }
+
+}
+
+void e_lpr(void *arg){
+
+    int i = *(int*) arg;
+
+    while (evacuate != true){
+
+        pthread_mutex_lock(&shm.data->entrance[i].lpr.lock);
+
+        strcpy(shm.data->entrance[i].lpr.licensePlate, "000000");
+
+        pthread_mutex_unlock(&shm.data->entrance[i].lpr.lock);
+
+        pthread_cond_signal(&shm.data->entrance[i].lpr.condition);
+
+        pthread_mutex_lock(&shm.data->entrance[i].lpr.lock);
+        //waiting for a car to show up
+
+        while (strcmp(shm.data->entrance[i].lpr.licensePlate, "000000") != true){
+
+            pthread_cond_wait(&shm.data->entrance[i].lpr.condition, &shm.data->entrance[i].lpr.lock);
+
+        }
+        pthread_mutex_unlock(&shm.data->entrance[i].lpr.lock);
+        int car_allowed = 0;
+        int k = 1;
+
+        for(k; k < 101; k++){
+
+        pthread_mutex_lock(&shm.data->entrance[i].lpr.lock);
+
+        int getplateatindex = 0;
+
+        getplateatindex = strcmp(shm.data->entrance[i].lpr.licensePlate, textplates[i]);
+
+        pthread_mutex_unlock(&shm.data->entrance[i].lpr.lock);
+
+        if (getplateatindex == 1){
+
+            car_allowed = 1;
+
+            break;
+        }
+        }
+
+        int cap = 0;
+
+        if (car_allowed != 0){
+
+            pthread_mutex_lock(&parkingStore);
+
+            cap = carpark1->s;
+
+            pthread_mutex_unlock(&parkingStore);
+
+
+
+            while(cap == 100){
+
+                car_allowed = 1;
+
+            }
+
+        }
+        if(car_allowed != 1){
+
+        }
+
+        clock_t parkingduration = (clock_t)randomIntGenerator(100, 10000) *1000;
+
+        pthread_mutex_lock(&levellock);
+
+        pthread_mutex_lock(&shm.data->entrance[i].lpr.lock);
+
+        carUpdate(&carpark1, shm.data->entrance->lpr.licensePlate, clock(), parkingduration, i);
+
+        pthread_mutex_unlock(&levellock);
+
+        pthread_mutex_unlock(&shm.data->entrance[i].lpr.lock);
+
+    }
+
+
+}
+
+
 // return true if car let in/out, false otherwise
-bool carDetected(int gateType, int gateNum, char plate[]){
+/* bool carDetected(int gateType, int gateNum, char plate[]){
     if(gateType == Entrance){
         // check plate against hash table
         if (true){  // if plate is not in hash table
@@ -602,7 +810,7 @@ bool carDetected(int gateType, int gateNum, char plate[]){
         printf("ERROR: invalid gate type");
         return false;
     }
-}
+} */
 
 
 void * entranceManager(int gateNum){
