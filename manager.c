@@ -8,6 +8,86 @@
 #include <fcntl.h>
 #include <simulator1.c>
 #include "mem.h"
+#include "cars.c"
+
+void initialisecarpark(carpark_t *carpark_space){
+    carpark_space->s = 0;
+
+    for (int i =0; i<100; i++){
+        strcpy(carpark_space->car[i].licensePlate, "blank");
+        carpark_space->car[i].enter = 0;
+        carpark_space->car[i].park = 0;
+        carpark_space->car[i].exit = 0;
+        carpark_space->car[i].level = 1;
+        carpark_space->car[i].lpr_index = 0;
+    }
+}
+
+void carUpdate(carpark_t* carpark_space, char* licensePlate, clock_t enter, clock_t park, int level){
+
+    int capacity_update = carpark_space->s;
+
+    memcpy(carpark_space->car[capacity_update].licensePlate, licensePlate, 6+1);
+
+    carpark_space->car[capacity_update].enter = enter;
+
+    carpark_space->car[capacity_update].park = park;
+
+    carpark_space->car[capacity_update].level = level;
+
+    carpark_space->car[capacity_update].exit = 0;
+
+    carpark_space->car[capacity_update].lpr_index = 0;
+
+    carpark_space->s = capacity_update + 1;
+
+}
+
+void carLeaves(carpark_t* carpark_space, char *licensePlate){
+
+    int capacity_update = carpark_space->s;
+
+    car_t old_car[100];
+
+    int k;
+
+    for (int i = 0; i < capacity_update; i++){
+        memcpy(old_car[i].licensePlate, carpark_space->car[i].licensePlate, 6+1);
+        old_car[i].enter = carpark_space->car[i].enter;
+        old_car[i].park = carpark_space->car[i].park;
+        old_car[i].level = carpark_space->car[i].level;
+        old_car[i].exit = carpark_space->car[i].exit;
+        old_car[i].lpr_index = carpark_space->car[i].lpr_index;
+    }
+
+    for (int i = 0; i < capacity_update; i++){
+        if (memcmp(carpark_space->car[i].licensePlate, licensePlate, 6+1) == 0){
+            k = i;
+            break;
+        }
+    }
+
+    for (int i = 0; i < k; i++){
+        memcpy(carpark_space->car[i].licensePlate, old_car[i].licensePlate,6+1);
+        carpark_space->car[i].enter = old_car[i].enter;
+        carpark_space->car[i].park = old_car[i].park;
+        carpark_space->car[i].level = old_car[i].level;
+        carpark_space->car[i].exit = old_car[i].exit;
+        carpark_space->car[i].lpr_index = old_car[i].lpr_index;
+    }
+
+    for (int i = k; i < capacity_update - 1; i++){
+        memcpy(carpark_space->car[i].licensePlate, old_car[i + 1].licensePlate,6+1);
+        carpark_space->car[i].enter = old_car[i + 1].enter;
+        carpark_space->car[i].park = old_car[i + 1].park;
+        carpark_space->car[i].level = old_car[i + 1].level;
+        carpark_space->car[i].exit = old_car[i + 1].exit;
+        carpark_space->car[i].lpr_index = old_car[i + 1].lpr_index;
+    }
+
+    carpark_space->s = capacity_update - 1;
+}
+
 
 //opening shared memory for manager
 bool create_shared_object_R( shared_memory_t* shm, const char* share_name ) {
