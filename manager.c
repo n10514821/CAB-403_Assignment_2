@@ -650,12 +650,12 @@ void * guiManager(){
     int level;
     char entry_gate;
     char exit_gate;
-    char entry_LPR[];
-    char exit_LPR[];
-    char Digital_sign[];
+    char entry_LPR[1];
+    char exit_LPR[1];
+    char Digital_sign[1];
     int Number_of_cars;
     int Car_capacity;
-    char Fire_alarm[];
+    char Fire_alarm[1];
     int16_t Temperature;
 
     while(true){
@@ -665,20 +665,21 @@ void * guiManager(){
         GUI_Create_table();
         for(int i=1; i <= Number_of_levels; i++){
             level = i;
-            entry_gate = "T";
-            exit_gate = "T";
-            entry_LPR[] = "test";
-            exit_LPR[] = "test";
-            Digital_sign[] = "test";
+            entry_gate = "A";
+            exit_gate = "B";
+            entry_LPR[1] = "C";
+            exit_LPR[1] = "D";
+            Digital_sign[1] = "E";
             Number_of_cars = 42;
             Car_capacity = 42;
-            Fire_alarm[] = "test";
+            Fire_alarm[1] = "F";
             Temperature = 42;
             Insert_data_into_table(level,entry_gate,exit_gate,entry_LPR,exit_LPR,Digital_sign,Number_of_cars,Car_capacity,Fire_alarm,Temperature);
         }
+        int revenue = 100;
         Total_revenue_GUI(revenue);
         Show_GUI();
-        sleep(0.05) // refresh every 50ms
+        sleep(0.05); // refresh every 50ms
     }
 }
 
@@ -691,19 +692,19 @@ void managerSetup(){
 
     // create manager threads
     int err = pthread_create(NULL, NULL, &entranceManager, NULL);
-    pthread_create(NULL, NULL, entranceManager(int num = 2));
-    pthread_create(NULL, NULL, entranceManager(int num = 3));
-    pthread_create(NULL, NULL, entranceManager(), int num = 4);
-    pthread_create(NULL, NULL, entranceManager(), int num = 5);
-    pthread_create(NULL, NULL, exitManager(), int num = 1);
-    pthread_create(NULL, NULL, exitManager(), int num = 2);
-    pthread_create(NULL, NULL, exitManager(), int num = 3);
-    pthread_create(NULL, NULL, exitManager(), int num = 4);
-    pthread_create(NULL, NULL, exitManager(), int num = 5);
-    pthread_create(NULL, NULL, levelManager(), int num = 1);
-    pthread_create(NULL, NULL, levelManager(), int num = 2);
-    pthread_create(NULL, NULL, levelManager(), int num = 3);
-    pthread_create(NULL, NULL, levelManager(), int num = 4);
-    pthread_create(NULL, NULL, levelManager(), int num = 5);
-    pthread_create(NULL, NULL, guiManager());
+    pthread_create(NULL, NULL, entranceManager(2), NULL);
+    pthread_create(NULL, NULL, entranceManager(3), NULL);
+    pthread_create(NULL, NULL, entranceManager(4), NULL);
+    pthread_create(NULL, NULL, entranceManager(5), NULL);
+    pthread_create(NULL, NULL, exitManager(1), NULL);
+    pthread_create(NULL, NULL, exitManager(2), NULL);
+    pthread_create(NULL, NULL, exitManager(3), NULL);
+    pthread_create(NULL, NULL, exitManager(4), NULL);
+    pthread_create(NULL, NULL, exitManager(5), NULL);
+    pthread_create(NULL, NULL, levelManager(1), NULL);
+    pthread_create(NULL, NULL, levelManager(2), NULL);
+    pthread_create(NULL, NULL, levelManager(3), NULL);
+    pthread_create(NULL, NULL, levelManager(4), NULL);
+    pthread_create(NULL, NULL, levelManager(5), NULL);
+    pthread_create(NULL, NULL, guiManager(), NULL);
 }
