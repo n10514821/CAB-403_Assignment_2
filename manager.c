@@ -49,6 +49,12 @@ void managerSetup(){
     pthread_create(NULL, NULL, exitManager(), int num = 3);
     pthread_create(NULL, NULL, exitManager(), int num = 4);
     pthread_create(NULL, NULL, exitManager(), int num = 5);
+    pthread_create(NULL, NULL, levelManager(), int num = 1);
+    pthread_create(NULL, NULL, levelManager(), int num = 2);
+    pthread_create(NULL, NULL, levelManager(), int num = 3);
+    pthread_create(NULL, NULL, levelManager(), int num = 4);
+    pthread_create(NULL, NULL, levelManager(), int num = 5);
+    pthread_create(NULL, NULL, guiManager());
 }
 
 bool OpenThenCloseBoomGate(char gateType, int gateNum){
@@ -153,15 +159,29 @@ void * exitManager(int gateNum){
     } 
 }
 
+void * levelManager(int levelNum){
+    pthread_cond_t condLPR = (pthread_cond_t *)(ptr + 2440 + (levelNum-1)*104);
+    pthread_mutex_t mutexLPR = (pthread_mutex_t *)(ptr + 2400 + (levelNum-1)*104);
 
-// car detected on a floor
-// update carpark struct
+    // wait for sensor to detect car on a level
+    while(true){
+        pthread_cond_wait(condLPR, mutexLPR);
+        if(true){ // car is not already on that level
+            // update carpark struct (add car to level)
+        } 
+    } 
+ 
+}
 
-
-// update screen (must be called 'frequently')
-    // current capacity of each level
-    // current status of each boom gate
-    // current status of signs
-    // current values of temperature sensors
-    // current staus of alarms
-    // current total revenue
+void * guiManager(){ // can either update GUI with data from struct every x ms or update when something happens
+    while(true){
+    // update screen (must be called 'frequently')
+        // current capacity of each level
+        // current status of each boom gate
+        // current status of signs
+        // current values of temperature sensors
+        // current staus of alarms
+        // current total revenue
+        sleep(0.005) // refresh every 5ms
+    }
+}
